@@ -16,6 +16,7 @@ CityStr = StringVar()
 Url = None
 conn = None
 SIGUN_NM_str = None
+server = "openapi.gg.go.kr"
         
 def InitScreen():
     fontTitle = font.Font(window, size=18, weight='bold',family='돋움체')
@@ -36,18 +37,16 @@ def InitScreen():
     MainText = Label(frameTitle, font = fontTitle, text='편의시설 - 카페 편의점 약국')
     MainText.pack(anchor="center",fill="both")
 
-    # 2. 시군구, 이메일 
+    # 2.L 시군구 
     data = ["수원시", "성남시", "용인시", "안양시", "안산시", "과천시", "광명시", "광주시", "군포시", "부천시", "시흥시", "김포시", "안성시"\
         , "오산시", "의왕시", "이천시", "평택시", "하남시", "화성시", "여주시", "고양시", "구리시", "남양주시", "동두천시", "양주시", "의정부시"
         , "파주시", "포천시", "양평군", "연천군", "포천군"]
     cityCombo = ttk.Combobox(frameCombo, values=data, font=fontNormal, textvariable=CityStr)
     cityCombo.set("경기도 시군구")
-    #cityCombo.bind()   ---------------------------------------------콤보박스 선택시 이벤트 해주는 바인드 부분 할 차례
+    cityCombo.bind('<<ComboboxSelected>>', getstr)             #콤보박스 선택시 이벤트 해주는 바인드 부분
     cityCombo.pack(side='left', padx=30)
     
-    global SIGUN_NM_str
-    SIGUN_NM_str = '&SIGUN_NM='+CityStr.get()      # 시군구 요청인자 &SIGUN_NM=땡땡시
-
+    # 2.R 이메일
     emailbutton = Button(frameCombo, text="이메일", padx=10, pady=10, command=Print)
     emailbutton.pack(side='right', padx=50)
     
@@ -56,14 +55,10 @@ def InitScreen():
     #ConvenienceUrl = "https://openapi.gg.go.kr/Genrestrtcate?KEY=9dff4350fafe400db05270b8161c46d3" #편의점
     #PharmacyUrl = "https://openapi.gg.go.kr/Parmacy?KEY=9dff4350fafe400db05270b8161c46d3"          #약국
     
-    # 사업자명 BIZPLC_NM
+    # 사업자명 BIZPLC_NM 에 해당하는걸 출력할것임-----------------------------------
 
-    #conn = HTTPSConnection(Url)
-    global conn
-    #conn = HTTPSConnection(Url)
 
     # 1. 위에서 경기도 시군구에서 시군구 요청인자 + 카페,편의점,약국 버튼 눌러서 만든 완성된 Url 가지고 인터넷 불러가서 xml 연다.
-    # 2. 
 
     Cafebutton = Button(frameselect, text="카페", padx=20, pady=20, command=CaftUrl)             # 카페 버튼 누르면 밑에 리스트 박스에 정보 송출
     Cafebutton.grid(row=0, column=0, padx=65)
@@ -99,6 +94,16 @@ def Print():
     print(Url)
     print(SIGUN_NM_str)
 
+    Url = Url + SIGUN_NM_str
+    print(Url)
+    # Url 합치기 필요 -> 인터넷 호출할 때에
+    global conn
+    global server
+    conn = HTTPSConnection(server)                #인터넷 호출부분
+    conn.request(Url)                              #---------------------------오류 수정필  이부분부터
+    req = conn.getresponse()
+    print(req.status)
+
 def CaftUrl():
     global Url
     Url = "https://openapi.gg.go.kr/Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3"
@@ -111,6 +116,9 @@ def PharmacyUrl():
     global Url
     Url = "https://openapi.gg.go.kr/Parmacy?KEY=9dff4350fafe400db05270b8161c46d3"
 
+def getstr(event):
+    global SIGUN_NM_str
+    SIGUN_NM_str = '&SIGUN_NM='+CityStr.get()      # 시군구 요청인자 &SIGUN_NM=땡땡시
 
 InitScreen() # 화면 전체 구성
 
