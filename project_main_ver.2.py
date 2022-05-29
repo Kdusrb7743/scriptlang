@@ -10,7 +10,8 @@ import requests
 
 from http.client import HTTPSConnection
 
-window = Tk()
+
+window = Tk()                      # 주제 : 편의시설: 카페, 편의점, 약국
 window.geometry("500x700-350+100") # 앞에는 크기 , 뒤에는 좌표
 
 
@@ -60,12 +61,9 @@ def InitScreen():
     #ConvenienceUrl = "https://openapi.gg.go.kr/Genrestrtcate?KEY=9dff4350fafe400db05270b8161c46d3" #편의점
     #PharmacyUrl = "https://openapi.gg.go.kr/Parmacy?KEY=9dff4350fafe400db05270b8161c46d3"          #약국
     
-    # 사업자명 BIZPLC_NM 에 해당하는걸 출력할것임-----------------------------------
+    # 사업자명 BIZPLC_NM 에 해당하는걸 출력할것임----------------------------------- 하는 중
 
-
-    # 1. 위에서 경기도 시군구에서 시군구 요청인자 + 카페,편의점,약국 버튼 눌러서 만든 완성된 Url 가지고 인터넷 불러가서 xml 연다.
-
-    Cafebutton = Button(frameselect, text="카페", padx=20, pady=20, command=CaftUrl)             # 카페 버튼 누르면 밑에 리스트 박스에 정보 송출
+    Cafebutton = Button(frameselect, text="카페", padx=20, pady=20, command=CaftUrl)     # 카페 버튼 누르면 밑에 리스트 박스에 정보 송출
     Cafebutton.grid(row=0, column=0, padx=65)
     Conveniencebutton = Button(frameselect, text="편의점", padx=20, pady=20, command=ConvenienceUrl)
     Conveniencebutton.grid(row=0, column=1)
@@ -74,32 +72,31 @@ def InitScreen():
 
 
     # 4. 리스트 및 상세정보
+    global left_listbox
     LBscrollbar = Scrollbar(framelist)
-    left_listbox = Listbox(framelist, font=fontNormal, width = 20,\
-        yscrollcommand=LBscrollbar.set)
+    left_listbox = Listbox(framelist, font=fontNormal, width = 20, yscrollcommand=LBscrollbar.set)
     left_listbox.pack(side='left')
-    LBscrollbar.pack(side='left')
-    right_listbox = Listbox(framelist,font=fontNormal, width = 20, \
-        yscrollcommand=LBscrollbar.set)
+    LBscrollbar.pack(side='left', fill='y')
+    LBscrollbar.config(command=left_listbox.yview)
+
+    RBscrollbar = Scrollbar(framelist)
+    right_listbox = Listbox(framelist,font=fontNormal, width = 20, yscrollcommand=RBscrollbar.set)
     right_listbox.pack(side='right')
+    RBscrollbar.pack(side='right', fill='y')
+    RBscrollbar.config(command=right_listbox.yview)
 
     # 5. 지도 및 그래프 부분
     # 추가
 
     # 이후 이메일 처리, 리스트 스크롤 처리 xml api들여오기, 지도, 그래프
-    
-    # URL 편의점 https://openapi.gg.go.kr/Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3
-    # URL 카페   https://openapi.gg.go.kr/Genrestrtcate?KEY=9dff4350fafe400db05270b8161c46d3
-    # URL 약국   https://openapi.gg.go.kr/Parmacy?KEY=9dff4350fafe400db05270b8161c46d3
 
-# 주제 : 편의시설: 카페, 편의점, 약국
 def Print():
     global Url
     global SIGUN_CD
     print(Url)
     print(SIGUN_CD)
 
-    Complete_Url = "https://openapi.gg.go.kr/" + Url + "&Type=xml" +"&pIndex=1" + "&pSize=50" +  SIGUN_CD
+    Complete_Url = "https://openapi.gg.go.kr/" + Url + "&Type=xml" +"&pIndex=1" + "&pSize=50" + SIGUN_CD
     #Complete_Url = "https://openapi.gg.go.kr/Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3&Type=xml&pIndex=1&pSize=50&SIGUN_CD=41270"
     print(Complete_Url)
     # Url 합치기 필요 -> 인터넷 호출할 때에
@@ -127,16 +124,16 @@ def extractData(strXml): #strXml은 OpenAPI 검색 결과 XML 문자열
     from xml.etree import ElementTree
 
     tree = ElementTree.fromstring(strXml)
-
     #print (parseString(strXml.decode('utf-8')).toprettyxml()) #내용 확인용     디버깅
 
-    # "item" 하위의 "title" 찾기.
-    # Note! 그냥 "title"은 찾으면 상단의 "title"도 검색되므로
+    global left_listbox
+    left_listbox.delete(0,left_listbox.size())      # 입력된거 리셋
+    i = 1
     itemElements = tree.iter("row") # item 엘리먼트 리스트 추출
     for item in itemElements:
         BIZPLC_NM = item.find("BIZPLC_NM")
         if len(BIZPLC_NM.text) > 0:
-            print({"지점이름":BIZPLC_NM.text})              #--------------리스트 박스에 출력하기
+            left_listbox.insert(i - 1, BIZPLC_NM.text)              #----리스트박스 출력완료 -> 리스트 클릭하면 오른쪽 상세알려줌 할 차례
 
 def connectOpenAPIServer():
     global conn, server
@@ -145,11 +142,12 @@ def connectOpenAPIServer():
 
 def CaftUrl():
     global Url
-    Url = "Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3"
+    Url = "Genrestrtcate?KEY=9dff4350fafe400db05270b8161c46d3"
 
 def ConvenienceUrl():
     global Url
-    Url = "Genrestrtcate?KEY=9dff4350fafe400db05270b8161c46d3"
+    Url = "Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3"
+    
 
 def PharmacyUrl():
     global Url
