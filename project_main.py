@@ -11,13 +11,15 @@ from http.client import HTTPSConnection
 window = Tk()
 window.geometry("500x700-350+100") # 앞에는 크기 , 뒤에는 좌표
 
+
 CityStr = StringVar()
 
 Url = None
 conn = None
-SIGUN_NM_str = None
-server = "openapi.gg.go.kr"
-        
+SIGUN_CD = None
+data_code = None
+server = "data.gg.go.kr"      # https://data.gg.go.kr/  openapi.gg.go.kr
+         
 def InitScreen():
     fontTitle = font.Font(window, size=18, weight='bold',family='돋움체')
     fontNormal = font.Font(window, size=15, weight='bold')
@@ -41,6 +43,7 @@ def InitScreen():
     data = ["수원시", "성남시", "용인시", "안양시", "안산시", "과천시", "광명시", "광주시", "군포시", "부천시", "시흥시", "김포시", "안성시"\
         , "오산시", "의왕시", "이천시", "평택시", "하남시", "화성시", "여주시", "고양시", "구리시", "남양주시", "동두천시", "양주시", "의정부시"
         , "파주시", "포천시", "양평군", "연천군", "포천군"]
+
     cityCombo = ttk.Combobox(frameCombo, values=data, font=fontNormal, textvariable=CityStr)
     cityCombo.set("경기도 시군구")
     cityCombo.bind('<<ComboboxSelected>>', getstr)             #콤보박스 선택시 이벤트 해주는 바인드 부분
@@ -90,35 +93,57 @@ def InitScreen():
 # 주제 : 편의시설: 카페, 편의점, 약국
 def Print():
     global Url
-    global SIGUN_NM_str
+    global SIGUN_CD
     print(Url)
-    print(SIGUN_NM_str)
+    print(SIGUN_CD)
 
-    Url = Url + SIGUN_NM_str
-    print(Url)
+    Complete_Url = Url + "&pIndex=1" + "&pSize=50" +  SIGUN_CD
+    #Complete_Url = "https://openapi.gg.go.kr/Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3&pIndex=1&pSize=50&SIGUN_CD=41270"
+    print(Complete_Url)
     # Url 합치기 필요 -> 인터넷 호출할 때에
     global conn
     global server
-    conn = HTTPSConnection(server)                #인터넷 호출부분
-    conn.request(Url)                              #---------------------------오류 수정필  이부분부터
+    if conn == None:
+        connectOpenAPIServer()      #OpenAPI 접속
+
+    conn.request("GET", Complete_Url, None)
+
     req = conn.getresponse()
     print(req.status)
+    if int(req.status) == 200:                            #-------------------- 417오류 해결필요
+        print("Book data downloading complete!")
+    else :
+        print ("OpenAPI request has been failed!! please retry")
+        return None
+
+
+def connectOpenAPIServer():
+    global conn, server
+    conn = HTTPSConnection(server)
+    conn.set_debuglevel(1)
 
 def CaftUrl():
     global Url
-    Url = "https://openapi.gg.go.kr/Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3"
+    Url = "Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3"
 
 def ConvenienceUrl():
     global Url
-    Url = "https://openapi.gg.go.kr/Genrestrtcate?KEY=9dff4350fafe400db05270b8161c46d3"
+    Url = "Genrestrtcate?KEY=9dff4350fafe400db05270b8161c46d3"
 
 def PharmacyUrl():
     global Url
-    Url = "https://openapi.gg.go.kr/Parmacy?KEY=9dff4350fafe400db05270b8161c46d3"
+    Url = "Parmacy?KEY=9dff4350fafe400db05270b8161c46d3"
 
 def getstr(event):
-    global SIGUN_NM_str
-    SIGUN_NM_str = '&SIGUN_NM='+CityStr.get()      # 시군구 요청인자 &SIGUN_NM=땡땡시
+    global SIGUN_CD, data_code
+    data_code = { "가평군" : 41820, "고양시":  41280, "과천시": 41290, "광명시":  41210, "광주시" : 41610, "구리시" : 41310, "군포시" : 41410,\
+        "김포시" : 41570, "남양주시": 41360, "동두천시" :  41250, "부천시": 41190, "성남시" : 41130, "수원시" :  41110, "시흥시" : 41390,\
+        "안산시" : 41270, "안성시" :  41550, "안양시" : 41170, "양주시" : 41630, "양평군" : 41830, "여주시" :  41670, "연천군" :  41800,\
+        "오산시" : 41370, "용인시" :  41460, "의왕시" :  41430, "의정부시" :  41150, "이천시"    :  41500, "파주시" :  41480, "평택시" : 41220,\
+        "포천시" : 41650, "하남시" :  41450, "화성시" :  41590}
+    City = data_code[CityStr.get()]
+    SIGUN_CD = '&SIGUN_CD='+ str(City)      # 시군구 요청인자 &SIGUN_NM=땡땡시
+    print(SIGUN_CD)
 
 InitScreen() # 화면 전체 구성
 
