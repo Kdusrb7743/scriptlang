@@ -41,7 +41,7 @@ def InitScreen():
     framemap.pack(side="top", fill="x")
     
     # 1. 타이틀
-    MainText = Label(frameTitle, font = fontTitle, text='편의시설 - 카페 편의점 약국')
+    MainText = Label(frameTitle, font = fontTitle, text='편의시설 - 휴게음식점 편의점 약국')
     MainText.pack(anchor="center",fill="both")
 
     # 2.L 시군구 
@@ -55,7 +55,7 @@ def InitScreen():
     cityCombo.pack(side='left', padx=20)
     
     # 2.R 이메일
-    emailbutton = Button(frameCombo, text="이메일", padx=15, pady=15, command=email)
+    emailbutton = Button(frameCombo, text="이메일", padx=15, pady=15, command=email_send)
     emailbutton.pack(side='right', padx=20)
     
     # 3. 카페, 편의점, 약국 버튼
@@ -65,12 +65,12 @@ def InitScreen():
     
     # 사업자명 BIZPLC_NM 에 해당하는걸 출력할것임----------------------------------- 하는 중
 
-    Cafebutton = Button(frameselect, text="카페", padx=30, pady=20, command=CaftUrl)     # 카페 버튼 누르면 밑에 리스트 박스에 정보 송출
-    Cafebutton.grid(row=0, column=0, padx=65)
+    Cafebutton = Button(frameselect, text="휴게음식점", padx=20, pady=20, command=CaftUrl)     # 카페 버튼 누르면 밑에 리스트 박스에 정보 송출
+    Cafebutton.grid(row=0, column=0, padx=55)
     Conveniencebutton = Button(frameselect, text="편의점", padx=30, pady=20, command=ConvenienceUrl)
     Conveniencebutton.grid(row=0, column=1)
     Pharmacybutton = Button(frameselect, text="약국", padx=30, pady=20, command=PharmacyUrl)
-    Pharmacybutton.grid(row=0, column=2, padx=65)
+    Pharmacybutton.grid(row=0, column=2, padx=55)
 
 
     # 4. 리스트 및 상세정보
@@ -82,7 +82,7 @@ def InitScreen():
     LBscrollbar.config(command=left_listbox.yview)
 
     # Center 검색
-    searchebutton = Button(framelist, text="검색", padx=10, pady=10, command=Print)
+    searchebutton = Button(framelist, text="검색", padx=10, pady=10, command=Search)
     searchebutton.pack(side='left')
     
     RBscrollbar = Scrollbar(framelist)  #우측 리스트박스
@@ -97,9 +97,8 @@ def InitScreen():
 
     # 이후 이메일 처리, 리스트 스크롤 처리 xml api들여오기, 지도, 그래프
 
-def Print():     #검색버튼 누르면 리스트박스에 selection된 것의 상세정보 우측에 표시
+def Search():     #검색버튼 누르면 리스트박스에 selection된 것의 상세정보 우측에 표시
     global right_listbox
-    from bs4 import BeautifulSoup
 
     selection = left_listbox.curselection()
     if (len(selection) > 0):
@@ -108,21 +107,25 @@ def Print():     #검색버튼 누르면 리스트박스에 selection된 것의 
         tree = ElementTree.fromstring(conn)
 
         right_listbox.delete(0, left_listbox.size())      # 입력된거 리셋
-        i = 1
         value = left_listbox.get(selection[0])
+        i = 1
 
-        print(value)
         itemele = tree.iter("row")
         for item in itemele:
-            name = item.find("BIZPLC_NM")
-            operation = item.find("BSN_STATE_NM") #REFINE_LOTNO_ADDR
-            road_name_add = item.find("REFINE_LOTNO_ADDR")                  #------------ 막 로직 완성--------
-
-            if (name.text == value):
-                right_listbox.insert(i - 1, "지점명 :" + name.text)
+            branch_name = item.find("BIZPLC_NM")
+            if (branch_name.text == value):
+                operation = item.find("BSN_STATE_NM") #REFINE_LOTNO_ADDR
+                road_name_add = item.find("REFINE_LOTNO_ADDR")                 
+                address = item.find("REFINE_ROADNM_ADDR")
+                callNum = item.find("LOCPLC_FACLT_TELNO")
+                zip_code = item.find("REFINE_ZIP_CD")
+                right_listbox.insert(i - 1, "지점명 :" + branch_name.text)
                 right_listbox.insert(i, "운영여부 :" + operation.text)
-                right_listbox.insert(i + 1, "도로명주소 :" + road_name_add.text)
-                print(1)
+                right_listbox.insert(i + 1, "지번주소 :" + address.text)
+                right_listbox.insert(i + 2, "지번주소 :" + road_name_add.text)
+                right_listbox.insert(i + 3, "우편번호 :" + zip_code.text)
+                right_listbox.insert(i + 4, "전화번호 :" + callNum.text)
+                print(right_listbox.get(0, right_listbox.size()))
                 break
         
         # itemElements = tree.iter("row") # item 엘리먼트 리스트 추출
@@ -131,12 +134,28 @@ def Print():     #검색버튼 누르면 리스트박스에 selection된 것의 
         #     if len(BIZPLC_NM.text) > 0:
         #         left_listbox.insert(i - 1, BIZPLC_NM.text)
 
-def email():     # 이메일 보내는 부분
-    pass
+def email_send():     # G이메일 보내는 부분
+    from email.mime.text import MIMEText
+    global right_listbox
+    a = str(right_listbox.get(0, right_listbox.size()))
+    msg = MIMEText(a)
+    msg['Subject'] = '제목: ' + right_listbox.get(0)
+    sendMail('mykimis73@gmail.com', 'mykimis73@gmail.com', msg)
+
+def sendMail(fromAddr, toAddr, msg):
+    import smtplib
+    #  메일 서버와 connect하고 통신 시작
+    s = smtplib.SMTP("smtp.gmail.com", 587)
+    s.starttls()
+
+    # 앱 password 이용
+    s.login('mykimis73@gmail.com','vhamicemykmacgyp')
+    s.sendmail(fromAddr, [toAddr], msg.as_string())
+    s.close()
 
 def CaftUrl():
     global Url
-    Url = "Genrestrtcate?KEY=9dff4350fafe400db05270b8161c46d3"
+    Url = "RESRESTRT?KEY=9dff4350fafe400db05270b8161c46d3"
     listbox_print()
 
 def ConvenienceUrl():
@@ -156,13 +175,14 @@ def listbox_print():
     global conn
 
     Complete_Url = 0
-    Complete_Url = "https://openapi.gg.go.kr/" + Url + "&Type=xml" + "&pIndex=1" + "&pSize=100" + SIGUN_CD
+    Complete_Url = "https://openapi.gg.go.kr/" + Url + "&Type=xml" + SIGUN_CD # + "&pIndex=1" + "&pSize=100" 
     #Complete_Url = "https://openapi.gg.go.kr/Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3&Type=xml&pIndex=1&pSize=50&SIGUN_CD=41270"
     #print(Url)
     #print(SIGUN_CD)            # 3개 디버깅용
     #print(Complete_Url)
 
     conn = openAPIserver(Complete_Url)
+    print(Complete_Url)
     extractData(conn)
 
     # req = conn.getresponse()
@@ -187,7 +207,10 @@ def extractData(strXml): #strXml은 OpenAPI 검색 결과 XML 문자열
     itemElements = tree.iter("row") # item 엘리먼트 리스트 추출
     for item in itemElements:
         BIZPLC_NM = item.find("BIZPLC_NM")
-        if len(BIZPLC_NM.text) > 0:
+        operation = item.find("BSN_STATE_NM")
+        if (operation.text == "폐업" or operation.text == "폐업 등"):
+            continue
+        elif len(BIZPLC_NM.text) > 0:
             left_listbox.insert(i - 1, BIZPLC_NM.text)    #----리스트박스 출력완료 -> 리스트 클릭하면 오른쪽 상세알려줌 할 차례
 
 # def connectOpenAPIServer():
