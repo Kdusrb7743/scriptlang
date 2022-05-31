@@ -1,14 +1,13 @@
-from calendar import c
-from msilib.schema import ComboBox
-from tarfile import PAX_FIELDS
+from statistics import harmonic_mean
 from tkinter import *
 from tkinter import font
 from tkinter import ttk
-from numpy import pad
 from xml.etree import ElementTree
+from numpy import double
 
 import requests
-
+import folium
+import webbrowser
 
 #from http.client import HTTPSConnection
 
@@ -93,9 +92,17 @@ def InitScreen():
 
 
     # 5. 지도 및 그래프 부분
+    Map_button = Button(framemap, text='지도출력',width=20, height=20, command=Pressed)
+    Map_button.pack(side='left')
     # 추가
 
     # 이후 이메일 처리, 리스트 스크롤 처리 xml api들여오기, 지도, 그래프
+def Pressed():
+    global Latitude, longitude, branch_name
+    map_osm = folium.Map(location=[float(Latitude), float(longitude)], zoom_start=25)
+    folium.Marker([float(Latitude), float(longitude)], popup=branch_name).add_to(map_osm)
+    map_osm.save('osm.html')            # html 파일로 저장
+    webbrowser.open_new('osm.html')
 
 def Search():     #검색버튼 누르면 리스트박스에 selection된 것의 상세정보 우측에 표시
     global right_listbox
@@ -112,19 +119,36 @@ def Search():     #검색버튼 누르면 리스트박스에 selection된 것의
 
         itemele = tree.iter("row")
         for item in itemele:
+            global branch_name
             branch_name = item.find("BIZPLC_NM")
             if (branch_name.text == value):
-                operation = item.find("BSN_STATE_NM") #REFINE_LOTNO_ADDR
-                road_name_add = item.find("REFINE_LOTNO_ADDR")                 
-                address = item.find("REFINE_ROADNM_ADDR")
-                callNum = item.find("LOCPLC_FACLT_TELNO")
-                zip_code = item.find("REFINE_ZIP_CD")
+                global Latitude, longitude            #---------------------------------위도 , 경도 , 도로명 or 지번 주소 가져가서 지도 출력
+                operation = item.find("BSN_STATE_NM")          # 영업 중인지
+                road_name_add = item.find("REFINE_LOTNO_ADDR") # 도로명 주소  
+                address = item.find("REFINE_ROADNM_ADDR")      # 지번 주소
+                zip_code = item.find("REFINE_ZIP_CD")          # 우편번호
+                callNum = item.find("LOCPLC_FACLT_TELNO")      # 전화번호
+
+                Latitude = item.find("REFINE_WGS84_LAT")        #위도
+                longitude = item.find("REFINE_WGS84_LOGT")       #경도
+
                 right_listbox.insert(i - 1, "지점명 :" + branch_name.text)
                 right_listbox.insert(i, "운영여부 :" + operation.text)
-                right_listbox.insert(i + 1, "지번주소 :" + address.text)
-                right_listbox.insert(i + 2, "지번주소 :" + road_name_add.text)
-                right_listbox.insert(i + 3, "우편번호 :" + zip_code.text)
-                right_listbox.insert(i + 4, "전화번호 :" + callNum.text)
+                if address != None:
+                    right_listbox.insert(i + 1, "지번주소 :" + address.text)
+                else : right_listbox.insert(i + 1, "주소 없음")
+                if road_name_add != None:
+                    right_listbox.insert(i + 2, "지번주소 :" + road_name_add.text)
+                else : right_listbox.insert(i + 2, "도로명 주소 없음")
+                if zip_code != None:
+                    right_listbox.insert(i + 3, "우편번호 :" + zip_code.text)
+                else : right_listbox.insert(i + 3, "우편번호 없음")
+                if callNum != None:
+                    right_listbox.insert(i + 4, "전화번호 :" + callNum.text)
+                else : right_listbox.insert(i + 4, "전화번호 없음.")
+                if Latitude != None and longitude != None:
+                    right_listbox.insert(i + 5, "지도 출력 가능")
+                else : right_listbox.insert(i + 5, "지도 출력 불가")
                 print(right_listbox.get(0, right_listbox.size()))
                 break
         
