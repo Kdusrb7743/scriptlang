@@ -13,7 +13,7 @@ import webbrowser
 
 
 window = Tk()                      # 주제 : 편의시설: 카페, 편의점, 약국
-window.geometry("550x700-350+100") # 앞에는 크기 , 뒤에는 좌표
+window.geometry("800x700-350+100") # 앞에는 크기 , 뒤에는 좌표
 
 
 CityStr = StringVar()
@@ -22,7 +22,11 @@ Url = None
 conn = None
 SIGUN_CD = None
 data_code = None
+Latitude = None
+longitude = None
 #server = "openapi.gg.go.kr"      # https://data.gg.go.kr/  https://openapi.gg.go.kr
+
+breakshop_cnt = conveniencestore_cnt = pharmacy_cnt = 0
 
 def InitScreen():
     fontTitle = font.Font(window, size=18, weight='bold',family='돋움체')
@@ -64,7 +68,7 @@ def InitScreen():
     
     # 사업자명 BIZPLC_NM 에 해당하는걸 출력할것임----------------------------------- 하는 중
 
-    Cafebutton = Button(frameselect, text="휴게음식점", padx=20, pady=20, command=CaftUrl)     # 카페 버튼 누르면 밑에 리스트 박스에 정보 송출
+    Cafebutton = Button(frameselect, text="휴게음식점", padx=20, pady=20, command=RestingUrl)     # 카페 버튼 누르면 밑에 리스트 박스에 정보 송출
     Cafebutton.grid(row=0, column=0, padx=55)
     Conveniencebutton = Button(frameselect, text="편의점", padx=30, pady=20, command=ConvenienceUrl)
     Conveniencebutton.grid(row=0, column=1)
@@ -73,7 +77,8 @@ def InitScreen():
 
 
     # 4. 리스트 및 상세정보
-    global left_listbox, right_listbox                #좌측 리스트박스
+    global left_listbox, right_listbox 
+    #좌측 리스트박스----- page넘기기 한페이지 = 1000개 데이터
     LBscrollbar = Scrollbar(framelist)
     left_listbox = Listbox(framelist, font=fontNormal, width = 20, yscrollcommand=LBscrollbar.set)
     left_listbox.pack(side='left')
@@ -83,26 +88,65 @@ def InitScreen():
     # Center 검색
     searchebutton = Button(framelist, text="검색", padx=10, pady=10, command=Search)
     searchebutton.pack(side='left')
-    
-    RBscrollbar = Scrollbar(framelist)  #우측 리스트박스
-    right_listbox = Listbox(framelist,font=fontNormal, width = 20, yscrollcommand=RBscrollbar.set)
+    #우측 리스트박스
+    RBscrollbar = Scrollbar(framelist)  
+    right_listbox = Listbox(framelist,font=fontNormal, width = 43, yscrollcommand=RBscrollbar.set)
     right_listbox.pack(side='right')
     RBscrollbar.pack(side='right', fill='y')
     RBscrollbar.config(command=right_listbox.yview)
 
-
     # 5. 지도 및 그래프 부분
-    Map_button = Button(framemap, text='지도출력',width=20, height=20, command=Pressed)
+    Map_button = Button(framemap, text='지도출력', padx=1, width=20, height=10, command=Map_new_tap)
     Map_button.pack(side='left')
-    # 추가
 
-    # 이후 이메일 처리, 리스트 스크롤 처리 xml api들여오기, 지도, 그래프
-def Pressed():
+    # ---------------------------그래프 남음 data 부
+    # 그래프 로직: 시군구에 휴게음식점 or 편의점 or 약국을 선택하면 나오는 개수를 data에 저장
+    global Graph
+    Graph = Canvas(framemap, width=600, height=200, bg='white')
+    Graph.pack(side='right')
+
+def drawGraph(canvas, data, canvasWidth, canvasHeight):
+    canvas.delete("grim")
+
+    if not len(data): # 데이터 없으면 return
+        canvas.create_text(canvasWidth/2,(canvasHeight/2), text="No Data", tags="grim")
+        return
+    nData = len(data) # 데이터 개수, 최대값, 최소값 얻어 놓기
+    nMax = max(data)
+    nMin = min(data)
+
+    canvas.create_rectangle(0, 0, canvasWidth, canvasHeight, fill='white', tag="grim")
+
+    if nMax == 0:
+        nMax = 1
+
+    rectWidth = (canvasWidth // nData) # 데이터 1개의 폭.
+    bottom = canvasHeight - 20 # bar의 bottom 위치
+    maxheight = canvasHeight - 40 # bar의 최대 높이.(위/아래 각각 20씩 여유.)
+    wherelist = ['휴게음식점', '편의점', '약국']        # 그래프 밑에 출력할 글
+    for i in range(nData): # 각 데이터에 대해.. # max/min은 특별한 색으로.
+        if nMax == data[i]: color="red"
+        elif nMin == data[i]: color='blue'
+        else: color="grey"
+        
+        curHeight = maxheight * data[i] / nMax  # 최대값에 대한 비율 반영
+        top = bottom - curHeight # bar의 top 위치
+        left = (i + 0.2) * rectWidth # bar의 left 위치
+        right = (i + 0.8) * rectWidth# bar의 right 위치
+        canvas.create_rectangle(left, top, right, bottom, fill=color, tag="grim", activefill='yellow')
+        # 위에 값, 아래에 번호.
+        canvas.create_text((left+right)//2, top-10, text=data[i], tags="grim")
+        canvas.create_text((left+right)//2, bottom+10, text=wherelist[i], tags="grim")
+
+
+
+def Map_new_tap():
     global Latitude, longitude, branch_name
-    map_osm = folium.Map(location=[float(Latitude), float(longitude)], zoom_start=25)
-    folium.Marker([float(Latitude), float(longitude)], popup=branch_name).add_to(map_osm)
-    map_osm.save('osm.html')            # html 파일로 저장
-    webbrowser.open_new('osm.html')
+    if (Latitude != None and longitude != None):
+        map_osm = folium.Map(location=[float(Latitude), float(longitude)], zoom_start=25)
+        folium.Marker([float(Latitude), float(longitude)], popup=branch_name).add_to(map_osm)
+        map_osm.save('osm.html')            # html 파일로 저장
+        webbrowser.open_new('osm.html')
 
 def Search():     #검색버튼 누르면 리스트박스에 selection된 것의 상세정보 우측에 표시
     global right_listbox
@@ -136,27 +180,26 @@ def Search():     #검색버튼 누르면 리스트박스에 selection된 것의
                 right_listbox.insert(i, "운영여부 :" + operation.text)
                 if address != None:
                     right_listbox.insert(i + 1, "지번주소 :" + address.text)
-                else : right_listbox.insert(i + 1, "주소 없음")
+                else:
+                    right_listbox.insert(i + 1, "주소 없음")
                 if road_name_add != None:
                     right_listbox.insert(i + 2, "지번주소 :" + road_name_add.text)
-                else : right_listbox.insert(i + 2, "도로명 주소 없음")
+                else:
+                    right_listbox.insert(i + 2, "도로명 주소 없음")
                 if zip_code != None:
                     right_listbox.insert(i + 3, "우편번호 :" + zip_code.text)
-                else : right_listbox.insert(i + 3, "우편번호 없음")
+                else:
+                    right_listbox.insert(i + 3, "우편번호 없음")
                 if callNum != None:
-                    right_listbox.insert(i + 4, "전화번호 :" + callNum.text)
-                else : right_listbox.insert(i + 4, "전화번호 없음.")
+                    right_listbox.insert(i + 4, "전화번호 :" + str(callNum.text))
+                else:
+                    right_listbox.insert(i + 4, "전화번호 없음.")
                 if Latitude != None and longitude != None:
                     right_listbox.insert(i + 5, "지도 출력 가능")
-                else : right_listbox.insert(i + 5, "지도 출력 불가")
+                else:
+                    right_listbox.insert(i + 5, "지도 출력 불가")
                 print(right_listbox.get(0, right_listbox.size()))
                 break
-        
-        # itemElements = tree.iter("row") # item 엘리먼트 리스트 추출
-        # for item in itemElements:
-        #     BIZPLC_NM = item.find("BIZPLC_NM")
-        #     if len(BIZPLC_NM.text) > 0:
-        #         left_listbox.insert(i - 1, BIZPLC_NM.text)
 
 def email_send():     # G이메일 보내는 부분
     from email.mime.text import MIMEText
@@ -177,22 +220,25 @@ def sendMail(fromAddr, toAddr, msg):
     s.sendmail(fromAddr, [toAddr], msg.as_string())
     s.close()
 
-def CaftUrl():
+def RestingUrl():
     global Url
     Url = "RESRESTRT?KEY=9dff4350fafe400db05270b8161c46d3"
-    listbox_print()
+    whichpoint = 1                          # whichpoint는 그래프에 사용할 어느
+    listbox_print(whichpoint)
 
 def ConvenienceUrl():
     global Url
     Url = "Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3"
-    listbox_print()
+    whichpoint = 2
+    listbox_print(whichpoint)
     
 def PharmacyUrl():
     global Url
     Url = "Parmacy?KEY=9dff4350fafe400db05270b8161c46d3"
-    listbox_print()
+    whichpoint = 3
+    listbox_print(whichpoint)
 
-def listbox_print():
+def listbox_print(whichpoint):
     global Url
     global SIGUN_CD
     global Complete_Url
@@ -201,13 +247,12 @@ def listbox_print():
     Complete_Url = 0
     Complete_Url = "https://openapi.gg.go.kr/" + Url + "&Type=xml" + SIGUN_CD # + "&pIndex=1" + "&pSize=100" 
     #Complete_Url = "https://openapi.gg.go.kr/Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3&Type=xml&pIndex=1&pSize=50&SIGUN_CD=41270"
-    #print(Url)
     #print(SIGUN_CD)            # 3개 디버깅용
     #print(Complete_Url)
 
     conn = openAPIserver(Complete_Url)
-    print(Complete_Url)
-    extractData(conn)
+    #print(Complete_Url)
+    extractData(conn, whichpoint)
 
     # req = conn.getresponse()
     # print(req.status)
@@ -220,14 +265,14 @@ def listbox_print():
 def openAPIserver(Complete_Url):
     return requests.get(Complete_Url).text.encode('utf-8')
 
-def extractData(strXml): #strXml은 OpenAPI 검색 결과 XML 문자열
-
+def extractData(strXml, whichpoint): #strXml은 OpenAPI 검색 결과 XML 문자열
     tree = ElementTree.fromstring(strXml)
     #print (parseString(strXml.decode('utf-8')).toprettyxml()) #내용 확인용     디버깅
 
     global left_listbox
     left_listbox.delete(0,left_listbox.size())      # 입력된거 리셋
     i = 1
+    cnt = 0
     itemElements = tree.iter("row") # item 엘리먼트 리스트 추출
     for item in itemElements:
         BIZPLC_NM = item.find("BIZPLC_NM")
@@ -236,12 +281,24 @@ def extractData(strXml): #strXml은 OpenAPI 검색 결과 XML 문자열
             continue
         elif len(BIZPLC_NM.text) > 0:
             left_listbox.insert(i - 1, BIZPLC_NM.text)    #----리스트박스 출력완료 -> 리스트 클릭하면 오른쪽 상세알려줌 할 차례
+            cnt += 1
+    
+    global breakshop_cnt, conveniencestore_cnt, pharmacy_cnt
+    if whichpoint == 1:
+        breakshop_cnt += cnt
+    elif whichpoint == 2:
+        conveniencestore_cnt += cnt
+    elif whichpoint == 3:
+        pharmacy_cnt += cnt
+    print(cnt)
+    grapgdata = [breakshop_cnt, conveniencestore_cnt, pharmacy_cnt]       # 1 휴게점, 2 편의점 3, 약국
+    drawGraph(Graph, grapgdata, 600, 200)            #data만 구하면 됨
+
 
 # def connectOpenAPIServer():
 #     global conn, server
 #     conn = HTTPSConnection(server)
 #     conn.set_debuglevel(1)
-
 def getstr(event):
     global SIGUN_CD, data_code
     data_code = { "가평군" : 41820, "고양시":  41280, "과천시": 41290, "광명시":  41210, "광주시" : 41610, "구리시" : 41310, "군포시" : 41410,\
@@ -254,6 +311,5 @@ def getstr(event):
     print(SIGUN_CD)
 
 InitScreen() # 화면 전체 구성
-
 
 window.mainloop()
