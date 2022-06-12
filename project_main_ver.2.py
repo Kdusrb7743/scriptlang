@@ -113,7 +113,6 @@ def InitScreen():
     Map_button.image = mapimage
     Map_button.pack(side='left')
 
-    # ---------------------------그래프 남음 data 부
     # 그래프 로직: 시군구에 휴게음식점 or 편의점 or 약국을 선택하면 나오는 개수를 data에 저장
     global Graph
     Graph = Canvas(framemap, width=600, height=200, bg='white')
@@ -125,7 +124,7 @@ def drawGraph(canvas, data, canvasWidth, canvasHeight):
     if not len(data): # 데이터 없으면 return
         canvas.create_text(canvasWidth/2,(canvasHeight/2), text="No Data", tags="grim")
         return
-    nData = len(data) # 데이터 개수, 최대값, 최소값 얻어 놓기
+    nData = len(data)
     nMax = max(data)
     nMin = min(data)
 

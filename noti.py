@@ -7,7 +7,7 @@ from xml.etree import ElementTree
 from xml.dom.minidom import parseString
 
 key = '9dff4350fafe400db05270b8161c46d3'
-TOKEN = '5544958695:AAFpwKDUT25HUTZ7i4pExUOHtdDr_Xgffeo'
+TOKEN = '5492320146:AAHmmPEGKY4uKwmNe-qczZiaK3u8W90WY_k'
 MAX_MSG_LENGTH = 300
 baseUrl = 'https://openapi.gg.go.kr/'
 bot = telepot.Bot(TOKEN)
@@ -22,20 +22,18 @@ def getData(Url, SIGUN_CD):
 
     items = tree.iter("row")    # return list type
     for item in items:              #--------------------------할것
-        branch_name = item.find("BIZPLC_NM")
-        operation = item.find("BSN_STATE_NM")          # 영업 중인지
-        road_name_add = item.find("REFINE_LOTNO_ADDR") # 도로명 주소  
-        address = item.find("REFINE_ROADNM_ADDR")      # 지번 주소
-        zip_code = item.find("REFINE_ZIP_CD")          # 우편번호
+        branch_name = item.find("BIZPLC_NM").text
+        operation = item.find("BSN_STATE_NM").text         # 영업 중인지
+        road_name_add = item.find("REFINE_LOTNO_ADDR").text # 도로명 주소  
         callNum = item.find("LOCPLC_FACLT_TELNO")      # 전화번호
 
-        Latitude = item.find("REFINE_WGS84_LAT")        #위도
-        longitude = item.find("REFINE_WGS84_LOGT")       #경도
+        if (operation == "폐업" or operation == "폐업 등"): #폐업 빼기
+            continue
 
-        #row =
+        row = str(branch_name) + '/' + str(operation) + '/' + str(road_name_add) + '/' +str(callNum)
         res_list.append(row)
         
-        return res_list
+    return res_list
 
 
 def sendMessage(user, msg):
