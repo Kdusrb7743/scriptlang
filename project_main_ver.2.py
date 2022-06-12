@@ -1,13 +1,17 @@
 from statistics import harmonic_mean
+from sys import path_hooks
 from tkinter import *
 from tkinter import font
 from tkinter import ttk
+from turtle import width
 from xml.etree import ElementTree
-from numpy import double
+from numpy import double, imag
+from PIL import Image, ImageTk
 
 import requests
 import folium
 import webbrowser
+#import telegram
 
 #from http.client import HTTPSConnection
 
@@ -50,7 +54,7 @@ def InitScreen():
     # 2.L 시군구 
     data = ["수원시", "성남시", "용인시", "안양시", "안산시", "과천시", "광명시", "광주시", "군포시", "부천시", "시흥시", "김포시", "안성시"\
         , "오산시", "의왕시", "이천시", "평택시", "하남시", "화성시", "여주시", "고양시", "구리시", "남양주시", "동두천시", "양주시", "의정부시"
-        , "파주시", "포천시", "양평군", "연천군", "포천군"]
+        , "파주시", "포천시", "양평군", "연천군", "포천군", "가평군"]
 
     cityCombo = ttk.Combobox(frameCombo, values=data, font=fontNormal, textvariable=CityStr, width=20)
     cityCombo.set("경기도 시군구")
@@ -58,22 +62,30 @@ def InitScreen():
     cityCombo.pack(side='left', padx=20)
     
     # 2.R 이메일
-    emailbutton = Button(frameCombo, text="이메일", padx=15, pady=15, command=email_send)
+    emailimage = PhotoImage(file="email.png")
+    emailbutton = Button(frameCombo, text="이메일", image=emailimage,  command=email_send)
+    emailbutton.image = emailimage
     emailbutton.pack(side='right', padx=20)
     
-    # 3. 카페, 편의점, 약국 버튼
     #CaftUrl = "https://openapi.gg.go.kr/Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3"      #카페
     #ConvenienceUrl = "https://openapi.gg.go.kr/Genrestrtcate?KEY=9dff4350fafe400db05270b8161c46d3" #편의점
     #PharmacyUrl = "https://openapi.gg.go.kr/Parmacy?KEY=9dff4350fafe400db05270b8161c46d3"          #약국
-    
-    # 사업자명 BIZPLC_NM 에 해당하는걸 출력할것임----------------------------------- 하는 중
 
-    Cafebutton = Button(frameselect, text="휴게음식점", padx=20, pady=20, command=RestingUrl)     # 카페 버튼 누르면 밑에 리스트 박스에 정보 송출
-    Cafebutton.grid(row=0, column=0, padx=55)
-    Conveniencebutton = Button(frameselect, text="편의점", padx=30, pady=20, command=ConvenienceUrl)
+    # 3. 카페, 편의점, 약국 버튼
+    restingimage = PhotoImage(file="Restinglogo.png")
+    Restingbutton = Button(frameselect, text="휴게음식점", image=restingimage ,padx=20, pady=20, command=RestingUrl)     # 카페 버튼 누르면 밑에 리스트 박스에 정보 송출
+    Restingbutton.image = restingimage
+    Restingbutton.grid(row=0, column=0, padx=55)
+
+    Convenienceimage = PhotoImage(file="Convenience.png")
+    Conveniencebutton = Button(frameselect, text="편의점", image=Convenienceimage, padx=30, pady=20, command=ConvenienceUrl)
+    Conveniencebutton.image = Convenienceimage
     Conveniencebutton.grid(row=0, column=1)
-    Pharmacybutton = Button(frameselect, text="약국", padx=30, pady=20, command=PharmacyUrl)
-    Pharmacybutton.grid(row=0, column=2, padx=55)
+
+    Pharmacyimage = PhotoImage(file="Pharmacy.png")
+    Pharmacybutton = Button(frameselect, text="약국",image=Pharmacyimage, padx=30, pady=20, command=PharmacyUrl)
+    Pharmacybutton.image = Pharmacyimage
+    Pharmacybutton.grid(row=0, column=2, padx=80)
 
 
     # 4. 리스트 및 상세정보
@@ -96,7 +108,9 @@ def InitScreen():
     RBscrollbar.config(command=right_listbox.yview)
 
     # 5. 지도 및 그래프 부분
-    Map_button = Button(framemap, text='지도출력', padx=1, width=20, height=10, command=Map_new_tap)
+    mapimage = PhotoImage(file="maplogo.png")
+    Map_button = Button(framemap, image=mapimage, command=Map_new_tap)
+    Map_button.image = mapimage
     Map_button.pack(side='left')
 
     # ---------------------------그래프 남음 data 부
@@ -131,8 +145,8 @@ def drawGraph(canvas, data, canvasWidth, canvasHeight):
         
         curHeight = maxheight * data[i] / nMax  # 최대값에 대한 비율 반영
         top = bottom - curHeight # bar의 top 위치
-        left = (i + 0.2) * rectWidth # bar의 left 위치
-        right = (i + 0.8) * rectWidth# bar의 right 위치
+        left = (i + 0.3) * rectWidth # bar의 left 위치
+        right = (i + 0.7) * rectWidth# bar의 right 위치
         canvas.create_rectangle(left, top, right, bottom, fill=color, tag="grim", activefill='yellow')
         # 위에 값, 아래에 번호.
         canvas.create_text((left+right)//2, top-10, text=data[i], tags="grim")
@@ -173,8 +187,8 @@ def Search():     #검색버튼 누르면 리스트박스에 selection된 것의
                 zip_code = item.find("REFINE_ZIP_CD")          # 우편번호
                 callNum = item.find("LOCPLC_FACLT_TELNO")      # 전화번호
 
-                Latitude = item.find("REFINE_WGS84_LAT")        #위도
-                longitude = item.find("REFINE_WGS84_LOGT")       #경도
+                Latitude = item.find("REFINE_WGS84_LAT").text        #위도
+                longitude = item.find("REFINE_WGS84_LOGT").text       #경도
 
                 right_listbox.insert(i - 1, "지점명 :" + branch_name.text)
                 right_listbox.insert(i, "운영여부 :" + operation.text)
@@ -313,3 +327,4 @@ def getstr(event):
 InitScreen() # 화면 전체 구성
 
 window.mainloop()
+
