@@ -1,24 +1,14 @@
-from statistics import harmonic_mean
-from sys import path_hooks
 from tkinter import *
 from tkinter import font
 from tkinter import ttk
-from turtle import width
 from xml.etree import ElementTree
-from numpy import double, imag
-from PIL import Image, ImageTk
 
 import requests
 import folium
 import webbrowser
-#import telegram
-
-#from http.client import HTTPSConnection
-
 
 window = Tk()                      # 주제 : 편의시설: 카페, 편의점, 약국
 window.geometry("800x700-350+100") # 앞에는 크기 , 뒤에는 좌표
-
 
 CityStr = StringVar()
 
@@ -133,24 +123,23 @@ def drawGraph(canvas, data, canvasWidth, canvasHeight):
     if nMax == 0:
         nMax = 1
 
-    rectWidth = (canvasWidth // nData) # 데이터 1개의 폭.
-    bottom = canvasHeight - 20 # bar의 bottom 위치
-    maxheight = canvasHeight - 40 # bar의 최대 높이.(위/아래 각각 20씩 여유.)
-    wherelist = ['휴게음식점', '편의점', '약국']        # 그래프 밑에 출력할 글
-    for i in range(nData): # 각 데이터에 대해.. # max/min은 특별한 색으로.
+    rectWidth = (canvasWidth // nData)
+    bottom = canvasHeight - 20 
+    maxheight = canvasHeight - 40 
+    wherelist = ['휴게음식점', '편의점', '약국']   # 그래프 밑에 출력할 글
+    for i in range(nData):                        # 각 데이터에 대해.. # max/min은 특별한 색으로.
         if nMax == data[i]: color="red"
         elif nMin == data[i]: color='blue'
         else: color="grey"
         
         curHeight = maxheight * data[i] / nMax  # 최대값에 대한 비율 반영
-        top = bottom - curHeight # bar의 top 위치
-        left = (i + 0.3) * rectWidth # bar의 left 위치
-        right = (i + 0.7) * rectWidth# bar의 right 위치
+        top = bottom - curHeight 
+        left = (i + 0.3) * rectWidth 
+        right = (i + 0.7) * rectWidth
         canvas.create_rectangle(left, top, right, bottom, fill=color, tag="grim", activefill='yellow')
-        # 위에 값, 아래에 번호.
+        # 위에 값, 아래에 어느시설인지
         canvas.create_text((left+right)//2, top-10, text=data[i], tags="grim")
         canvas.create_text((left+right)//2, bottom+10, text=wherelist[i], tags="grim")
-
 
 
 def Map_new_tap():
@@ -179,7 +168,7 @@ def Search():     #검색버튼 누르면 리스트박스에 selection된 것의
             global branch_name
             branch_name = item.find("BIZPLC_NM")
             if (branch_name.text == value):
-                global Latitude, longitude            #---------------------------------위도 , 경도 , 도로명 or 지번 주소 가져가서 지도 출력
+                global Latitude, longitude                     #위도 , 경도 , 도로명 or 지번 주소 가져가서 지도 출력용
                 operation = item.find("BSN_STATE_NM")          # 영업 중인지
                 road_name_add = item.find("REFINE_LOTNO_ADDR") # 도로명 주소  
                 address = item.find("REFINE_ROADNM_ADDR")      # 지번 주소
@@ -228,7 +217,6 @@ def sendMail(fromAddr, toAddr, msg):
     s = smtplib.SMTP("smtp.gmail.com", 587)
     s.starttls()
 
-    # 앱 password 이용
     s.login('mykimis73@gmail.com','vhamicemykmacgyp')
     s.sendmail(fromAddr, [toAddr], msg.as_string())
     s.close()
@@ -236,7 +224,7 @@ def sendMail(fromAddr, toAddr, msg):
 def RestingUrl():
     global Url
     Url = "RESRESTRT?KEY=9dff4350fafe400db05270b8161c46d3"
-    whichpoint = 1                          # whichpoint는 그래프에 사용할 어느
+    whichpoint = 1                          # whichpoint는 그래프에 사용할 때 어느 시설에 추가하는지용
     listbox_print(whichpoint)
 
 def ConvenienceUrl():
@@ -264,23 +252,14 @@ def listbox_print(whichpoint):
     #print(Complete_Url)
 
     conn = openAPIserver(Complete_Url)
-    #print(Complete_Url)
     extractData(conn, whichpoint)
 
-    # req = conn.getresponse()
-    # print(req.status)
-    # if int(req.status) == 200:                 # 417오류 해결필요 -> 안씀
-    #     print("data downloading complete!")
-    # else :
-    #     print ("OpenAPI request has been failed!! please retry")
-    #     return None
 
 def openAPIserver(Complete_Url):
     return requests.get(Complete_Url).text.encode('utf-8')
 
-def extractData(strXml, whichpoint): #strXml은 OpenAPI 검색 결과 XML 문자열
+def extractData(strXml, whichpoint):
     tree = ElementTree.fromstring(strXml)
-    #print (parseString(strXml.decode('utf-8')).toprettyxml()) #내용 확인용     디버깅
 
     global left_listbox
     left_listbox.delete(0,left_listbox.size())      # 입력된거 리셋
@@ -293,7 +272,7 @@ def extractData(strXml, whichpoint): #strXml은 OpenAPI 검색 결과 XML 문자
         if (operation.text == "폐업" or operation.text == "폐업 등"):
             continue
         elif len(BIZPLC_NM.text) > 0:
-            left_listbox.insert(i - 1, BIZPLC_NM.text)    #----리스트박스 출력완료 -> 리스트 클릭하면 오른쪽 상세알려줌 할 차례
+            left_listbox.insert(i - 1, BIZPLC_NM.text)    #----리스트박스 출력완료 -> 리스트 클릭하면 오른쪽 상세알려줌
             cnt += 1
     
     global breakshop_cnt, conveniencestore_cnt, pharmacy_cnt
@@ -305,13 +284,8 @@ def extractData(strXml, whichpoint): #strXml은 OpenAPI 검색 결과 XML 문자
         pharmacy_cnt += cnt
     print(cnt)
     grapgdata = [breakshop_cnt, conveniencestore_cnt, pharmacy_cnt]       # 1 휴게점, 2 편의점 3, 약국
-    drawGraph(Graph, grapgdata, 600, 200)            #data만 구하면 됨
+    drawGraph(Graph, grapgdata, 600, 200)     
 
-
-# def connectOpenAPIServer():
-#     global conn, server
-#     conn = HTTPSConnection(server)
-#     conn.set_debuglevel(1)
 def getstr(event):
     global SIGUN_CD, data_code
     data_code = { "가평군" : 41820, "고양시":  41280, "과천시": 41290, "광명시":  41210, "광주시" : 41610, "구리시" : 41310, "군포시" : 41410,\
@@ -326,4 +300,3 @@ def getstr(event):
 InitScreen() # 화면 전체 구성
 
 window.mainloop()
-
