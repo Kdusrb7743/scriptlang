@@ -26,6 +26,10 @@ def getData(Url, SIGUN_CD):
         operation = item.find("BSN_STATE_NM").text         # 영업 중인지
         road_name_add = item.find("REFINE_LOTNO_ADDR").text # 도로명 주소  
         callNum = item.find("LOCPLC_FACLT_TELNO")      # 전화번호
+        if callNum != None:
+            #right_listbox.insert(i + 4, "전화번호 :" + str(callNum.text))
+            callNum = str(callNum.text)
+        else: callNum = "전화번호 없음"
 
         if (operation == "폐업" or operation == "폐업 등"): #폐업 빼기
             continue

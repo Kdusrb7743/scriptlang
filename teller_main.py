@@ -28,27 +28,6 @@ def replyAptData(SIGUN_CD, user, Url):
     else:
         noti.sendMessage( user, '%s 기간에 해당하는 데이터가 없습니다.'%SIGUN_CD )
 
-def save(user, loc_param):
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTSusers( user TEXT, location TEXT, PRIMARY KEY(user, location) )')
-    try:
-        cursor.execute('INSERT INTO users(user, location) VALUES ("%s", "%s")' % (user, loc_param))
-    except sqlite3.IntegrityError:
-        noti.sendMessage( user, '이미 해당 정보가 저장되어 있습니다.' )
-        return
-    else:
-        noti.sendMessage( user, '저장되었습니다.' )
-        conn.commit()
-
-def check( user ):
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS users( user TEXT, location TEXT, PRIMARY KEY(user, location) )')
-    cursor.execute('SELECT * from users WHERE user="%s"' % user)
-    for data in cursor.fetchall():
-        row = 'id:' + str(data[0]) + ', location:' + data[1]
-        noti.sendMessage( user, row )
 
 def handle(msg):
     content_type, chat_type, chat_id = telepot.glance(msg)
@@ -63,12 +42,6 @@ def handle(msg):
     elif text.startswith('지역') and len(args)>0:
         print('try to 지역', args[1])
         replyAptData( '202205', chat_id, args[1] )
-    elif text.startswith('저장') and len(args)>0:
-        print('try to 저장', args[1])
-        save( chat_id, args[1] )            # 세이브 부분
-    elif text.startswith('확인'):
-        print('try to 확인')
-        check( chat_id )                    # 체크 부분
     else:
         noti.sendMessage(chat_id, '''모르는 명령어입니다.\n 검색 [지역번호] [100 = 휴게음식점, 200 = 편의점, 300 = 약국 중 숫자 입력]
  \n확인 중 하나의 명령을 입력하세요.\n 지역 ["가평군" : 41820, "고양시":  41280, "과천시": 41290, "광명시":  41210, "광주시" : 41610, "구리시" : 41310, "군포시" : 41410,\
