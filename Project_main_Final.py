@@ -108,7 +108,7 @@ def InitScreen():
     Graph = Canvas(framemap, width=600, height=200, bg='white')
     Graph.pack(side='right')
 
-def drawGraph(canvas, data, canvasWidth, canvasHeight):
+def drawGraph(canvas, data, canvasWidth, canvasHeight):     # 그래프 함수는 편의시설 버튼 클릭시 나오는 시설의 개수를 각 시설그래프에추가
     canvas.delete("grim")
 
     if not len(data): # 데이터 없으면 return
@@ -142,7 +142,7 @@ def drawGraph(canvas, data, canvasWidth, canvasHeight):
         canvas.create_text((left+right)//2, bottom+10, text=wherelist[i], tags="grim")
 
 
-def Map_new_tap():
+def Map_new_tap():                            #맵 함수는 지도 출력 가능한경우 위도 경도를 가져와 새창에서 지도를 출력
     global Latitude, longitude, branch_name
     if (Latitude != None and longitude != None):
         map_osm = folium.Map(location=[float(Latitude), float(longitude)], zoom_start=25)
@@ -150,7 +150,7 @@ def Map_new_tap():
         map_osm.save('osm.html')            # html 파일로 저장
         webbrowser.open_new('osm.html')
 
-def Search():     #검색버튼 누르면 리스트박스에 selection된 것의 상세정보 우측에 표시
+def Search():                                 # 가운데 검색버튼 누르면 좌측리스트박스에 selection된 것의 상세정보 우측 리스트박스에 표시
     global right_listbox
 
     selection = left_listbox.curselection()
@@ -203,7 +203,7 @@ def Search():     #검색버튼 누르면 리스트박스에 selection된 것의
                 print(right_listbox.get(0, right_listbox.size()))
                 break
 
-def email_send():     # G이메일 보내는 부분
+def email_send():                       # G이메일 보내는 부분
     from email.mime.text import MIMEText
     global right_listbox
     a = str(right_listbox.get(0, right_listbox.size()))
@@ -211,7 +211,7 @@ def email_send():     # G이메일 보내는 부분
     msg['Subject'] = '제목: ' + right_listbox.get(0)
     sendMail('mykimis73@gmail.com', 'mykimis73@gmail.com', msg)
 
-def sendMail(fromAddr, toAddr, msg):
+def sendMail(fromAddr, toAddr, msg):    # 이메일 보내기 추가 함수 부분
     import smtplib
     #  메일 서버와 connect하고 통신 시작
     s = smtplib.SMTP("smtp.gmail.com", 587)
@@ -221,25 +221,25 @@ def sendMail(fromAddr, toAddr, msg):
     s.sendmail(fromAddr, [toAddr], msg.as_string())
     s.close()
 
-def RestingUrl():
+def RestingUrl():          #휴게음식점 api   # GUi 편의시설 3종 버튼을 누르면 각각에 알맞는 Url을 주어 인터넷에서 가져오기까지의 시작점
     global Url
     Url = "RESRESTRT?KEY=9dff4350fafe400db05270b8161c46d3"
     whichpoint = 1                          # whichpoint는 그래프에 사용할 때 어느 시설에 추가하는지용
     listbox_print(whichpoint)
 
-def ConvenienceUrl():
+def ConvenienceUrl():     # 편의점 api
     global Url
     Url = "Resrestrtcvnstr?KEY=9dff4350fafe400db05270b8161c46d3"
     whichpoint = 2
     listbox_print(whichpoint)
     
-def PharmacyUrl():
+def PharmacyUrl():         # 약국 api
     global Url
     Url = "Parmacy?KEY=9dff4350fafe400db05270b8161c46d3"
     whichpoint = 3
     listbox_print(whichpoint)
 
-def listbox_print(whichpoint):
+def listbox_print(whichpoint):      #위 3개의 Url중 하나를 받아서 인터넷 연결 및 가져온 데이터 출력함수 연결
     global Url
     global SIGUN_CD
     global Complete_Url
@@ -255,11 +255,11 @@ def listbox_print(whichpoint):
     extractData(conn, whichpoint)
 
 
-def openAPIserver(Complete_Url):
+def openAPIserver(Complete_Url):            #인터넷 연결
     return requests.get(Complete_Url).text.encode('utf-8')
 
 def extractData(strXml, whichpoint):
-    tree = ElementTree.fromstring(strXml)
+    tree = ElementTree.fromstring(strXml)   #인터넷에서 가져와서 리스트박스 출력부분
 
     global left_listbox
     left_listbox.delete(0,left_listbox.size())      # 입력된거 리셋
@@ -286,7 +286,7 @@ def extractData(strXml, whichpoint):
     grapgdata = [breakshop_cnt, conveniencestore_cnt, pharmacy_cnt]       # 1 휴게점, 2 편의점 3, 약국
     drawGraph(Graph, grapgdata, 600, 200)     
 
-def getstr(event):
+def getstr(event):                                  # 콤보박스에서 가져온 떙땡시를 알맞는 번호로 변환하여 인터넷 Url완성부에 붙이는 용
     global SIGUN_CD, data_code
     data_code = { "가평군" : 41820, "고양시":  41280, "과천시": 41290, "광명시":  41210, "광주시" : 41610, "구리시" : 41310, "군포시" : 41410,\
         "김포시" : 41570, "남양주시": 41360, "동두천시" :  41250, "부천시": 41190, "성남시" : 41130, "수원시" :  41110, "시흥시" : 41390,\
